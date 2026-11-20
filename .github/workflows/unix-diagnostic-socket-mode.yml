@@ -1,0 +1,20 @@
+name: Unix diagnostic socket mode control
+on:
+  push:
+    paths:
+      - '.github/workflows/unix-diagnostic-socket-mode.yml'
+      - 'tests/unix-diagnostic-socket-mode/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  socket-mode:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '11.0.100'
+      - name: Test default socket access with two local users
+        shell: bash
+        run: bash tests/unix-diagnostic-socket-mode/check.sh
