@@ -56,6 +56,11 @@ try {
     $owner = Get-Content -LiteralPath $ownerResult -Raw
     $lower = Get-Content -LiteralPath $lowResult -Raw
     $targetRuntime = Get-Content -LiteralPath (Join-Path $publicDir 'target-out.txt') -Raw
+    $coreClrModule = (Get-Process -Id $target.Id).Modules |
+        Where-Object { $_.ModuleName -ieq 'coreclr.dll' } | Select-Object -First 1
+    if (-not $coreClrModule) { throw 'Loaded coreclr.dll was not found in target process.' }
+    $coreClrPath = $coreClrModule.FileName
+    $coreClrHash = (Get-FileHash -LiteralPath $coreClrPath -Algorithm SHA256).Hash
     $isAdmin = [Security.Principal.WindowsPrincipal]::new(
         [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
         [Security.Principal.WindowsBuiltInRole]::Administrator)
@@ -64,6 +69,8 @@ try {
     Write-Output "OWNER_CONNECT=$owner"
     Write-Output "DISTINCT_USER_CONNECT=$lower"
     Write-Output $targetRuntime.Trim()
+    Write-Output "CORECLR_PATH=$coreClrPath"
+    Write-Output "CORECLR_SHA256=$coreClrHash"
 }
 finally {
     if ($target -and -not $target.HasExited) {
