@@ -63,11 +63,11 @@ static async Task CheckAsync(string name, X509Certificate2 issuer, X509Certifica
                 CertificateRevocationCheckMode = X509RevocationMode.NoCheck
             }, cts.Token);
             var buffer = new byte[1];
-            return await server.ReadAsync(buffer, cts.Token) == 1 && buffer[0] == 0x42;
+            return (await server.ReadAsync(buffer, cts.Token) == 1 && buffer[0] == 0x42, "none");
         }
         catch (Exception ex) when (ex is AuthenticationException or IOException or OperationCanceledException)
         {
-            return false;
+            return (false, $"{ex.GetType().Name}:{ex.HResult:X8}:{ex.Message}");
         }
     });
 
@@ -99,7 +99,7 @@ static async Task CheckAsync(string name, X509Certificate2 issuer, X509Certifica
     {
         failure = ex.GetType().Name;
     }
-    var marker = await serverTask;
+    var (marker, serverFailure) = await serverTask;
     listener.Stop();
-    Console.WriteLine($"case={name};accepted={accepted};marker={marker};failure={failure}");
+    Console.WriteLine($"case={name};accepted={accepted};marker={marker};failure={failure};serverFailure={serverFailure}");
 }
