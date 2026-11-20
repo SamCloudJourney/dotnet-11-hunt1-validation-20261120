@@ -45,6 +45,16 @@ static async Task CheckAsync(string name, X509Certificate2 issuer, X509Certifica
     serial[0] &= 0x7f;
     using var publicLeaf = request.Create(issuer, now.AddHours(-1), now.AddDays(1), serial);
     using var leaf = publicLeaf.CopyWithPrivateKey(leafKey);
+    // Windows Schannel cannot use an ephemeral private key as a TLS server credential.
+    // Persist only this disposable runner's synthetic key; keep other platforms unchanged.
+    var pfxPassword = Guid.NewGuid().ToString("N");
+    using var persistentLeaf = OperatingSystem.IsWindows()
+        ? X509CertificateLoader.LoadPkcs12(
+            leaf.Export(X509ContentType.Pfx, pfxPassword),
+            pfxPassword,
+            X509KeyStorageFlags.PersistKeySet | X509KeyStorageFlags.UserKeySet)
+        : null;
+    var serverLeaf = persistentLeaf ?? leaf;
 
     using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(8));
     var listener = new TcpListener(IPAddress.Loopback, 0);
@@ -58,7 +68,7 @@ static async Task CheckAsync(string name, X509Certificate2 issuer, X509Certifica
             using var server = new SslStream(serverTcp.GetStream(), false);
             await server.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
             {
-                ServerCertificate = leaf,
+                ServerCertificate = serverLeaf,
                 EnabledSslProtocols = SslProtocols.Tls12,
                 CertificateRevocationCheckMode = X509RevocationMode.NoCheck
             }, cts.Token);
