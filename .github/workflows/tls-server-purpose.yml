@@ -1,0 +1,29 @@
+name: .NET 11 TLS server purpose matrix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/tls-server-purpose.yml
+      - tests/tls-server-purpose/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tls-purpose:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install official .NET 11 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 11.0.x
+      - name: Run loopback TLS server-purpose matrix
+        shell: bash
+        run: dotnet run --project tests/tls-server-purpose/TlsServerPurpose.csproj --configuration Release
