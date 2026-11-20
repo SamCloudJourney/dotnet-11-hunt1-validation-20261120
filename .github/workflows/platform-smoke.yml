@@ -1,0 +1,29 @@
+name: .NET 11 platform smoke
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  runtime:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Install official .NET 11 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 11.0.x
+      - name: Print runtime identity and build a trivial app
+        shell: bash
+        run: |
+          dotnet --info
+          dotnet new console --framework net11.0 --output smoke --no-restore
+          dotnet build smoke --configuration Release
+          dotnet run --project smoke --configuration Release --no-build
