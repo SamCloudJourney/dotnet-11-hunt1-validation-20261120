@@ -1,8 +1,6 @@
 name: .NET 11 platform smoke
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
