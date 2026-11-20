@@ -1,0 +1,24 @@
+name: Windows default diagnostics pipe access
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/windows-default-diagnostic-pipe.yml'
+      - 'tests/windows-default-diagnostic-pipe/**'
+permissions:
+  contents: read
+jobs:
+  pipe-access:
+    runs-on: windows-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '11.0.100'
+      - name: Build inert process
+        shell: pwsh
+        run: dotnet build tests/windows-default-diagnostic-pipe/Target.csproj --configuration Release
+      - name: Compare owner and distinct-user pipe access
+        shell: pwsh
+        run: ./tests/windows-default-diagnostic-pipe/run.ps1
